@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+</head>
+<link rel="manifest" href="manifest.json">
+
+<body>
+    <h1>Github Profile</h1>
+    <input type="text" id="text_input">
+    <input type="button" onclick="gitdata()" value="get profile">
+    <div id='git_image'>
+        <img src="" alt="profile image" id="image">
+        <p id='para'></p>
+    </div>
+</body>
+
+<!-- Github API - https://api.github.com/users -->
+
+<script>
+
+    function gitdata()
+    {
+        var url='https://api.github.com/users/'+document.getElementById('text_input').value;
+
+        fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            console.log(data.avatar_url)
+            var im = document.getElementById("image");
+            im.setAttribute("src",data.avatar_url);
+
+            var gi = document.getElementById('para');
+            gi.innerHTML=JSON.stringify(data);
+        })
+
+        .catch(function(response){
+            return response.status;
+            console.log(response.status);
+        });;
+
+    }   
+</script>
+
+
+</html>

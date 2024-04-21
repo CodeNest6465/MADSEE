@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+</head>
+<body>
+<center>
+<h1>Real Time Fetch with Simple Balance Sheet Statement</h1>
+<table id='tbl' border=1>
+<tr>
+<th style="width: 120px;"> Date  </th>
+<th style="width: 120px;"> Net Receivables </th>
+<th style="width: 120px;"> Cash & Cash Equivalents </th>
+<th style="width: 120px;"> Account Payables </th>
+<th style="width: 120px;"> Net Debt </th>
+<th style="width: 120px;"> Total Equity </th>
+<th style="width: 120px;"> Long Term Investments </th>
+</tr>
+</table>
+</center>
+
+</body>
+<!-- https://financialmodelingprep.com/api/v3/balance-sheet-statement/AAPL?period=annual&apikey=RslEVBRQCqRMloHRNgFZKgkM1UhHPCKM" -->
+
+
+<script>
+    window.addEventListener('DOMContentLoaded',(event) => {
+        let source = ["https://financialmodelingprep.com/api/v3/balance-sheet-statement/AAPL?period=annual&apikey=RslEVBRQCqRMloHRNgFZKgkM1UhHPCKM"]
+        let index = 0
+        while(index < source.length){
+            console.log("fetching from"+ source[index]);
+            fetch(source[index])
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                let dat = JSON.stringify(data);
+                dat1 = data;
+                console.log(dat1);
+                let bod = document.getElementById("body");
+                var tb = document.getElementById("tbl");
+
+                for(let i=0;i<dat1.length;i++)
+                {
+                    var tr = document.createElement('tr');
+                    var td = document.createElement('td');
+
+                    td.innerHTML = dat1[i]["date"];
+                    tr.appendChild(td);
+                    tb.appendChild(tr);
+
+                    var td = document.createElement('td');
+
+                    td.innerHTML = dat1[i]["netReceivables"];
+                    tr.appendChild(td);
+                    tb.appendChild(tr);
+
+
+                    var td = document.createElement('td');
+
+                    td.innerHTML = dat1[i]["cashAndCashEquivalents"];
+                    tr.appendChild(td);
+                    tb.appendChild(tr);
+
+
+
+                    var td = document.createElement('td');
+
+                    td.innerHTML = dat1[i]["accountPayables"];
+                    tr.appendChild(td);
+                    tb.appendChild(tr);
+
+
+                                                        
+                    var td = document.createElement('td');
+
+                    td.innerHTML = dat1[i]["netDebt"];
+                    tr.appendChild(td);
+                    tb.appendChild(tr);
+
+
+
+                    var td = document.createElement('td');
+
+                    td.innerHTML = dat1[i]["totalEquity"];
+                    tr.appendChild(td);
+                    tb.appendChild(tr);
+
+
+
+                    var td = document.createElement('td');
+
+                    td.innerHTML = dat1[i]["longTermInvestments"];
+                    tr.appendChild(td);
+                    tb.appendChild(tr);
+                }
+            })
+            .catch(error => console.log('error', error));
+            index+=1;
+        }
+    });
+</script>
+</html>
+
+

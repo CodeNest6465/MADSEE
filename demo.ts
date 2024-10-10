@@ -1,5 +1,5 @@
-// Function to check if the modal with the specific heading is visible
-async function isModalVisible(page: any): Promise<boolean> {
+// Function to check if the specific modal is visible and matches the title
+async function isPLModalVisible(page: any): Promise<boolean> {
     const headingSelector = 'h4#modal-basic-title'; // Selector for the modal's title
     const headingText = await page.evaluate(headingSelector => {
         const headingElement = document.querySelector(headingSelector);
@@ -9,74 +9,81 @@ async function isModalVisible(page: any): Promise<boolean> {
     return headingText === 'P&L Economical Valuation Applications Settings';
 }
 
-// Main function to capture table data
-async function captureTableData(page: any) {
-    // Check if the modal is visible
-    if (await isModalVisible(page)) {
-        console.log("Modal with the specific heading is found.");
+// Main function to capture table data from the P&L modal
+async function capturePLTableData(page: any) {
+    // Wait for the modal to be visible
+    if (await isPLModalVisible(page)) {
+        console.log("P&L modal is found.");
 
-        // Wait for the table to be visible and ensure it is loaded
-        await page.waitForSelector('.table.table-striped.table-bordered', { visible: true }); // Using class selector
+        // Wait for the table inside the modal to be visible
+        await page.waitForSelector('.modal-body', { visible: true });
 
-        // Select the table by its class
-        const targetTable = await page.$('.table.table-striped.table-bordered');
+        // Select the modal body
+        const modalBody = await page.$('.modal-body');
 
-        if (targetTable) {
-            console.log("Table found");
+        if (modalBody) {
+            // Select the closest table within the modal
+            const targetTable = await modalBody.$('.table.table-striped.table-bordered');
 
-            // Capture formatted data from the table
-            const formattedData = await page.evaluate((table) => {
-                if (!table) return [];
+            if (targetTable) {
+                console.log("P&L Table found");
 
-                // Get headers
-                const headerElements = Array.from(table.querySelectorAll('thead th'));
-                const headers = headerElements.map(header => header.textContent?.trim() || '');
+                // Capture formatted data from the table
+                const formattedData = await page.evaluate((table) => {
+                    if (!table) return [];
 
-                // Function to get cell values considering input elements
-                function getGridCellValue(cell: any): string {
-                    let value = '';
-                    const fieldElement = cell.querySelector('input, select, textarea, ng-select');
+                    // Get headers
+                    const headerElements = Array.from(table.querySelectorAll('thead th'));
+                    const headers = headerElements.map(header => header.textContent?.trim() || '');
 
-                    if (fieldElement) {
-                        if (fieldElement.tagName.toLowerCase() === 'input') {
-                            value = (fieldElement as HTMLInputElement).value.trim();
-                        } else if (fieldElement.tagName.toLowerCase() === 'select') {
-                            value = (fieldElement as HTMLSelectElement).value.trim();
-                        } else if (fieldElement.tagName.toLowerCase() === 'textarea') {
-                            value = (fieldElement as HTMLTextAreaElement).value.trim();
-                        } else if (fieldElement.tagName.toLowerCase() === 'ng-select') {
-                            const selectedOption = fieldElement.querySelector('.ng-value .ng-value-label');
-                            value = selectedOption?.textContent?.trim() || '';
+                    // Function to get cell values considering input elements
+                    function getGridCellValue(cell: any): string {
+                        let value = '';
+                        const fieldElement = cell.querySelector('input, select, textarea, ng-select');
+
+                        if (fieldElement) {
+                            if (fieldElement.tagName.toLowerCase() === 'input') {
+                                value = (fieldElement as HTMLInputElement).value.trim();
+                            } else if (fieldElement.tagName.toLowerCase() === 'select') {
+                                value = (fieldElement as HTMLSelectElement).value.trim();
+                            } else if (fieldElement.tagName.toLowerCase() === 'textarea') {
+                                value = (fieldElement as HTMLTextAreaElement).value.trim();
+                            } else if (fieldElement.tagName.toLowerCase() === 'ng-select') {
+                                const selectedOption = fieldElement.querySelector('.ng-value .ng-value-label');
+                                value = selectedOption?.textContent?.trim() || '';
+                            }
+                        } else {
+                            value = cell.textContent?.trim() || '';
                         }
-                    } else {
-                        value = cell.textContent?.trim() || '';
+                        return value;
                     }
-                    return value;
-                }
 
-                // Get rows and their data
-                const rows = Array.from(table.querySelectorAll('tbody tr')).map(row => {
-                    const cells = Array.from(row.querySelectorAll('td'));
-                    const rowData: Record<string, string> = {};
-                    headers.forEach((header, index) => {
-                        const cell = cells[index];
-                        rowData[header] = getGridCellValue(cell);
+                    // Get rows and their data
+                    const rows = Array.from(table.querySelectorAll('tbody tr')).map(row => {
+                        const cells = Array.from(row.querySelectorAll('td'));
+                        const rowData: Record<string, string> = {};
+                        headers.forEach((header, index) => {
+                            const cell = cells[index];
+                            rowData[header] = getGridCellValue(cell);
+                        });
+                        return rowData;
                     });
-                    return rowData;
-                });
 
-                return rows;
-            }, targetTable);
+                    return { headers, rows };
+                }, targetTable);
 
-            // Log the captured formatted data
-            console.log(formattedData);
+                // Log the captured formatted data including headers
+                console.log(formattedData);
+            } else {
+                console.error('P&L Table not found within the modal.');
+            }
         } else {
-            console.error('Table not found.');
+            console.error('Modal body not found.');
         }
     } else {
-        console.error('Modal with the specific heading is not visible.');
+        console.error('P&L modal is not visible or incorrect modal is opened.');
     }
 }
 
 // Example usage: call the function within your Playwright test context
-await captureTableData(page);
+await capturePLTableData(page);

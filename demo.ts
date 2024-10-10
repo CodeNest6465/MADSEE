@@ -1,60 +1,82 @@
-// Wait for the modal to be visible
-await page.waitForSelector('ngb-modal-window[role="dialog"]', { visible: true });
-
-// Wait for the table to be visible and ensure the table is loaded
-await page.waitForSelector('#plEconomicTable', { visible: true });
-
-// Select the table by its ID
-const table = await page.$('#plEconomicTable');
-
-if (table) {
-    // Get all header cells in the table
-    const headerCells = await table.$$('thead th');
-    const headers: string[] = [];
-
-    // Extract text from each header cell
-    for (const header of headerCells) {
-        const headerText = await header.evaluate(el => el.textContent.trim());
-        headers.push(headerText);
-    }
-
-    // Log the header data for debugging
-    console.log(`Header data: ${JSON.stringify(headers)}`);
-
-    // Get all the rows in the table body
-    const rows = await table.$$('tbody tr');
-
-    // Log the number of rows found
-    console.log(`Found ${rows.length} rows in the table.`);
-
-    // Initialize an array to hold the data
-    let tableData: (string | null)[][] = []; // Explicitly declare the type as a 2D array of strings or null
-
-    // Loop through each row and extract the cell values
-    for (const row of rows) {
-        const cells = await row.$$('td');
-        
-        // Initialize an array for row data
-        let rowData: (string | null)[] = []; // Explicitly declare the type as an array of strings or null
-
-        // Extract text from each cell in the row
-        for (const cell of cells) {
-            const cellText = await cell.evaluate(el => el.textContent.trim() || "N/A"); // Use "N/A" for empty cells
-            rowData.push(cellText);
-        }
-
-        // Log the row data for debugging
-        console.log(`Row data: ${JSON.stringify(rowData)}`);
-
-        // Add the extracted row data to the tableData array
-        tableData.push(rowData);
-    }
-
-    // Combine headers and body data
-    const completeTableData = [headers, ...tableData]; // Combine headers with body data
-
-    // Output the complete table data to verify it
-    console.log('Complete table data:', JSON.stringify(completeTableData, null, 2));
-} else {
-    console.error('Table not found.');
+// Function to check if the modal with the specific heading is visible
+async function isModalVisible(page: any): Promise<boolean> {
+    const headingSelector = 'h4#modal-basic-title'; // Selector for the modal's title
+    const headingText = await page.evaluate(headingSelector => {
+        const headingElement = document.querySelector(headingSelector);
+        return headingElement ? headingElement.textContent?.trim() : null;
+    }, headingSelector);
+    
+    return headingText === 'P&L Economical Valuation Applications Settings';
 }
+
+// Main function to capture table data
+async function captureTableData(page: any) {
+    // Check if the modal is visible
+    if (await isModalVisible(page)) {
+        console.log("Modal with the specific heading is found.");
+
+        // Wait for the table to be visible and ensure it is loaded
+        await page.waitForSelector('.table.table-striped.table-bordered', { visible: true }); // Using class selector
+
+        // Select the table by its class
+        const targetTable = await page.$('.table.table-striped.table-bordered');
+
+        if (targetTable) {
+            console.log("Table found");
+
+            // Capture formatted data from the table
+            const formattedData = await page.evaluate((table) => {
+                if (!table) return [];
+
+                // Get headers
+                const headerElements = Array.from(table.querySelectorAll('thead th'));
+                const headers = headerElements.map(header => header.textContent?.trim() || '');
+
+                // Function to get cell values considering input elements
+                function getGridCellValue(cell: any): string {
+                    let value = '';
+                    const fieldElement = cell.querySelector('input, select, textarea, ng-select');
+
+                    if (fieldElement) {
+                        if (fieldElement.tagName.toLowerCase() === 'input') {
+                            value = (fieldElement as HTMLInputElement).value.trim();
+                        } else if (fieldElement.tagName.toLowerCase() === 'select') {
+                            value = (fieldElement as HTMLSelectElement).value.trim();
+                        } else if (fieldElement.tagName.toLowerCase() === 'textarea') {
+                            value = (fieldElement as HTMLTextAreaElement).value.trim();
+                        } else if (fieldElement.tagName.toLowerCase() === 'ng-select') {
+                            const selectedOption = fieldElement.querySelector('.ng-value .ng-value-label');
+                            value = selectedOption?.textContent?.trim() || '';
+                        }
+                    } else {
+                        value = cell.textContent?.trim() || '';
+                    }
+                    return value;
+                }
+
+                // Get rows and their data
+                const rows = Array.from(table.querySelectorAll('tbody tr')).map(row => {
+                    const cells = Array.from(row.querySelectorAll('td'));
+                    const rowData: Record<string, string> = {};
+                    headers.forEach((header, index) => {
+                        const cell = cells[index];
+                        rowData[header] = getGridCellValue(cell);
+                    });
+                    return rowData;
+                });
+
+                return rows;
+            }, targetTable);
+
+            // Log the captured formatted data
+            console.log(formattedData);
+        } else {
+            console.error('Table not found.');
+        }
+    } else {
+        console.error('Modal with the specific heading is not visible.');
+    }
+}
+
+// Example usage: call the function within your Playwright test context
+await captureTableData(page);

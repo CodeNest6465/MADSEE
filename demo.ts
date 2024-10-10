@@ -1,56 +1,31 @@
+// Wait for the modal to be visible and ensure the table is loaded
+await page.waitForSelector('#plEconomicTable', { visible: true });
+
+// Select the table by its ID
 const table = await page.$('#plEconomicTable');
 
-// Get all rows from the table
+// Get all the rows in the table body
 const rows = await table.$$('tbody tr');
 
+// Initialize an array to hold the data
 let tableData: string[][] = [];
 
-// Iterate over each row
+// Loop through each row and extract the cell values
 for (const row of rows) {
-  // Get all cells (td elements) within the row
-  const cells = await row.$$('td');
-
-  // Extract the text content from each cell
-  let rowData: string[] = [];
-  for (const cell of cells) {
-    const cellText = await cell.textContent();
-    rowData.push(cellText?.trim() || ''); // Add trimmed text content to row data
-  }
-
-  // Add the row's data to the table data
-  tableData.push(rowData);
-}
-
-console.log(tableData);
-
-
-
-// Get the table element by its ID
-const table = await page.$('#plEconomicTable');
-
-// Get all rows in the table body
-const rows = await table.$$('tbody tr');
-
-let tableData: string[][] = [];
-
-// Iterate over each row
-for (const row of rows) {
-    // Get all cells within the row
     const cells = await row.$$('td');
     
-    // Initialize an array to hold the row data
+    // Initialize an array for row data
     let rowData: string[] = [];
 
-    // Extract text from each cell and push to rowData array
+    // Extract text from each cell in the row
     for (const cell of cells) {
         const cellText = await cell.evaluate(el => el.textContent.trim());
         rowData.push(cellText);
     }
 
-    // Add the rowData array to the overall tableData array
+    // Add the extracted row data to the tableData array
     tableData.push(rowData);
 }
 
-// Output the table data to verify it's correct
+// Output the table data to verify it
 console.log(tableData);
-

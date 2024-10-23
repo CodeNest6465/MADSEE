@@ -1,47 +1,32 @@
-async function testDropdowns(ptfPage: any) {
-    // Iterate through each business model
-    for (const [businessModel, sppiFlows] of Object.entries(assetLiabilityData.FVT)) {
-        console.log("Selecting Business Model:", businessModel);
-        await ptfPage.selectDropdown('businessModelDropdown', businessModel);
-        await ptfPage.closePopup();
+export default class Helper {
+    async checkDisabledFields(page: Page) {
+        await page.waitForTimeout(3000);
 
-        // Iterate through each SPPI flow under the business model
-        for (const [sppiIndicator, conditionalValues] of Object.entries(sppiFlows)) {
-            console.log("Selecting SPPI Indicator:", sppiIndicator);
-            await ptfPage.selectDropdown('sppiIndicatorDropdown', sppiIndicator);
-            await ptfPage.closePopup();
+        // Get all input, textarea, select, and ng-select elements
+        const fields = await page.locator('input, textarea, select, ng-select').elementHandles();
 
-            // Check if conditionalValues is an object
-            if (typeof conditionalValues === 'object') {
-                // Iterate through the conditional values
-                for (const [conditionalValue, options] of Object.entries(conditionalValues)) {
-                    console.log("Selecting Conditional Value:", conditionalValue);
-                    await ptfPage.selectDropdown('conditionalValueDropdown', conditionalValue);
-                    await ptfPage.closePopup();
+        for (const field of fields) {
+            const isDisabled = await field.evaluate((el) => {
+                const element = el as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+                return element.disabled;  // Check if the field is disabled
+            });
 
-                    // If options is an object, iterate through to select the final value
-                    if (typeof options === 'object') {
-                        for (const [optionKey, finalValue] of Object.entries(options)) {
-                            if (typeof finalValue === 'string' && finalValue) {
-                                console.log("Selecting Final Value:", finalValue);
-                                await ptfPage.selectDropdown('finalValueDropdown', finalValue);
-                                await ptfPage.closePopup();
-                            }
-                        }
-                    } else if (typeof options === 'string') {
-                        console.log("Selecting Final Value Directly:", options);
-                        await ptfPage.selectDropdown('finalValueDropdown', options);
-                        await ptfPage.closePopup();
-                    }
-                }
-            } else if (typeof conditionalValues === 'string') {
-                console.log("Selecting SPPI Indicator Value Directly:", conditionalValues);
-                await ptfPage.selectDropdown('conditionalValueDropdown', conditionalValues);
-                await ptfPage.closePopup();
+            const fieldName = await field.getAttribute('name') || 
+                              await field.getAttribute('id') || 
+                              await field.getAttribute('placeholder') || 
+                              await field.getAttribute('aria-label');
+
+            // If the field is not disabled, log a message
+            if (!isDisabled) {
+                console.log(`Field '${fieldName}' is not disabled.`);
             }
         }
     }
 }
 
-// Example usage in your test
-await testDropdowns(ptfPage);
+
+
+
+// Assuming you're using the Helper class and a Playwright page is set up
+const helper = new Helper();
+await helper.checkDisabledFields(page);

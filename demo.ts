@@ -1,32 +1,34 @@
-export default class Helper {
-    async checkDisabledFields(page: Page) {
-        await page.waitForTimeout(3000);
+const fs = require('fs');
+const path = require('path');
 
-        // Get all input, textarea, select, and ng-select elements
-        const fields = await page.locator('input, textarea, select, ng-select').elementHandles();
+lodificationData = async () => {
+    await page.getByRole('button', { name: 'Search' }).click();
+    let resp = await repage.elementSearch(page, sharedMnemonic);
 
-        for (const field of fields) {
-            const isDisabled = await field.evaluate((el) => {
-                const element = el as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
-                return element.disabled;  // Check if the field is disabled
-            });
+    if (resp.status() === 200) {
+        console.log("Modification complete.");
 
-            const fieldName = await field.getAttribute('name') || 
-                              await field.getAttribute('id') || 
-                              await field.getAttribute('placeholder') || 
-                              await field.getAttribute('aria-label');
+        // Define the file path and ensure directories exist
+        const filePath = path.join(__dirname, '../../../Starware/rcsharedMnemonic.txt');
+        const dir = path.dirname(filePath);
 
-            // If the field is not disabled, log a message
-            if (!isDisabled) {
-                console.log(`Field '${fieldName}' is not disabled.`);
-            }
+        // Create directory and file if they don't exist
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
         }
+        if (!fs.existsSync(filePath)) {
+            fs.writeFileSync(filePath, '');
+        }
+
+        // Append mnemonic at the end of the file
+        fs.appendFileSync(filePath, `${sharedMnemonic}\n`);
+
+        const fileContent = fs.readFileSync(filePath, 'utf-8');
+        expect(fileContent.includes(sharedMnemonic)).toBeTruthy();
+        console.log(`Shared mnemonic "${sharedMnemonic}" saved to ${filePath}`);
+        
+        validationComplete = true;
+    } else if (resp.status() === 204) {
+        console.log("No content (204). Retrying...");
     }
 }
-
-
-
-
-// Assuming you're using the Helper class and a Playwright page is set up
-const helper = new Helper();
-await helper.checkDisabledFields(page);

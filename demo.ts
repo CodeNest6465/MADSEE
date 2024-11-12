@@ -7,13 +7,26 @@ async function updateExcelFile(fileName: string, mnemonic: string, creationSucce
     const filePath = path.resolve(__dirname, '..', fileName);
 
     // Check if the file exists; if not, create it
+    let workbook;
     if (!fs.existsSync(filePath)) {
-        const newWorkbook = xlsx.utils.book_new();
-        xlsx.writeFile(newWorkbook, filePath);
+        // If the file doesn't exist, create a new workbook with initial data
+        const sheetNames = ['GOP', 'RC', 'PTF'];
+        const headings = ['Creation', 'Modification', 'Inactivation', 'Closure', 'Reactivation'];
+
+        // Create a new workbook and add sheets with headers
+        workbook = xlsx.utils.book_new();
+        sheetNames.forEach(sheetName => {
+            const worksheet = xlsx.utils.aoa_to_sheet([headings]);  // Convert array to worksheet
+            xlsx.utils.book_append_sheet(workbook, worksheet, sheetName);
+        });
+
+        // Write the new workbook to the file
+        xlsx.writeFile(workbook, filePath);
+    } else {
+        // If the file already exists, load the existing workbook
+        workbook = xlsx.readFile(filePath);
     }
 
-    // Load the workbook
-    const workbook = xlsx.readFile(filePath);
     const sheetNames = ['GOP', 'RC', 'PTF'];
     const headings = ['Creation', 'Modification', 'Inactivation', 'Closure', 'Reactivation'];
 
